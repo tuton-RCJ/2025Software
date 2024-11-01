@@ -1,5 +1,7 @@
 #include "STS3032.h"
 
+// positive speed is forward, Positive turnRate is right
+
 STS3032::STS3032(HardwareSerial *serial)
 {
     _serial = serial;
@@ -8,7 +10,7 @@ STS3032::STS3032(HardwareSerial *serial)
     init();
 }
 
-STS3032::init()
+void STS3032::init()
 {
     for (int i = 1; i < 5; i++)
     {
@@ -20,10 +22,52 @@ STS3032::init()
     }
 }
 
-STS3032::directDrive(int id, int speed)
+void STS3032::LeftDrive(int SpeedPercent, int acceleration)
 {
-    sms_sts.WriteSpe(id, speed);
+    int _SpeedPercent = constrain(SpeedPercent, -100, 100);
+    int speed = _SpeedPercent * _maxSpeed / 100;
+
+    sms_sts.WriteSpe(1, speed, acceleration);
+    sms_sts.WriteSpe(2, speed, acceleration);
 }
 
+void STS3032::RightDrive(int SpeedPercent, int acceleration)
+{
+    int _SpeedPercent = constrain(SpeedPercent, -100, 100);
+    int speed = _SpeedPercent * _maxSpeed / 100;
 
-STS3032::drive(speed,)
+    speed = -speed;
+
+    sms_sts.WriteSpe(3, speed, acceleration);
+    sms_sts.WriteSpe(4, speed, acceleration);
+}
+
+void STS3032::stop()
+{
+    LeftDrive(0, 0);
+    RightDrive(0, 0);
+}
+
+void STS3032::drive(int driveSpeedPercent, int turnRate)
+{
+    if (turnRate >= 100)
+    {
+        LeftDrive(driveSpeedPercent, 0);
+        RightDrive(-driveSpeedPercent, 0);
+    }
+    else if (turnRate <= -100)
+    {
+        LeftDrive(-driveSpeedPercent, 0);
+        RightDrive(driveSpeedPercent, 0);
+    }
+    else if (turnRate >= 0)
+    {
+        LeftDrive(driveSpeedPercent, 0);
+        RightDrive(driveSpeedPercent - turnRate, 0);
+    }
+    else if (turnRate <= 0)
+    {
+        LeftDrive(driveSpeedPercent - turnRate, 0);
+        RightDrive(driveSpeedPercent, 0);
+    }
+}

@@ -18,12 +18,19 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(3, NP_R, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(3, NP_L, NEO_GRB + NEO_KHZ800);
 
 HardwareSerial Serial1(PA10, PA9);
-int sensor[] = {PC0, PC1, PC2, PC3, PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PC4, PC5, PB0, PB1};
+HardwareSerial Serial3(PC11, PC10);
+int sensor[] = {PC0, PC1, PC2, PC3, PA0, PA1, PA2, PA4, PA5, PA6, PA7, PC4, PC5, PB0, PB1, PA3};//LLLLLLLCRRRRRRRF
+
+
+int ReadColorSensorL();
+int ReadColorSensorR();
+
 void setup()
 {
-  Serial1.setRx(PA10);
-  Serial1.setTx(PA9);
+
   Serial1.begin(115200);
+  Serial3.begin(115200);
+
   Serial1.println("start");
 
   Wire.setSDA(I2C_SDA);
@@ -80,27 +87,30 @@ void setup()
 
 void loop()
 {
-  delay(200);
-  Serial1.write(255);
-
+  delay(20);
   // put your main code here, to run repeatedly:
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 16; i++)
   {
-    int num = 0;
-    for (int j = 0; j < 4; j++)
-    {
-      Serial1.print(analogRead(sensor[i * 4 + j]));
-      Serial1.print(" ");
-      if (analogRead(sensor[i * 4 + j]) > 800)
-      {
-        num += 1 << j;
-      }
-    }
-    //Serial1.write(num);
+    int val = analogRead(sensor[i]);
+    Serial1.print(val);
+    Serial1.print(" ");
+    Serial3.print(val);
+    Serial3.print(" ");
   }
-  Serial1.println();
-  return;
 
+  int color_L = ReadColorSensorL();
+  int color_R = ReadColorSensorR();
+  Serial1.print(color_L);
+  Serial1.print(" ");
+  Serial1.println(color_R);
+
+  Serial3.print(color_L);
+  Serial3.print(" ");
+  Serial3.println(color_R);
+}
+
+int ReadColorSensorL()
+{
   int h, l, r, g, b, a;
   // 0x03 Read Data
   Wire.beginTransmission(S11059_ADDR);
@@ -153,11 +163,15 @@ void loop()
     {
       a = 0;
     }
-
-    Serial1.write(a);
   }
   Wire.endTransmission();
+  return a;
+}
 
+int ReadColorSensorR()
+{
+  int h, l, r, g, b, a;
+  // 0x03 Read Data
   Wire2.beginTransmission(S11059_ADDR);
   Wire2.write(0x03);
   Wire2.endTransmission();
@@ -166,6 +180,8 @@ void loop()
 
   if (Wire2.available())
   {
+
+    // Red
     h = Wire2.read();
     l = Wire2.read();
     r = h << 8 | l;
@@ -186,7 +202,7 @@ void loop()
     rr = map(r, 30, 56000, 0, 255);
     gg = map(g, 30, 41000, 0, 255);
     bb = map(b, 30, 56000, 0, 255);
-    if (rr > 130 && gg > 200)
+    if (rr > 100 && gg > 100)
     {
       a = 1;
     }
@@ -206,8 +222,7 @@ void loop()
     {
       a = 0;
     }
-
-    Serial1.write(a);
   }
   Wire2.endTransmission();
+  return a;
 }

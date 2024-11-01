@@ -11,9 +11,9 @@
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NeoPixelPIN, NEO_GRB + NEO_KHZ800);
 
-HardwareSerial Serial1(PA10, PA9); // Serial1 is connected to the USB port
-HardwareSerial Serial2(PA3, PA2);  // Serial2 is connected to the main board
-HardwareSerial Serial3(PC5, PC10); // Serial3 is connected to the OpenMV
+HardwareSerial uart1(PA10, PA9); // uart1 is connected to the USB port
+HardwareSerial uart2(PA3, PA2);  // uart2 is connected to the main board
+HardwareSerial uart3(PC5, PC10); // uart3 is connected to the OpenMV
 
 int tof_pins[] = {PA4, PA5, PA6, PA7, PA8};
 int tof_distances[5];
@@ -29,18 +29,18 @@ void i2c_scan()
 
     if (error == 0)
     {
-      Serial1.print("I2C device found at address 0x");
+      uart1.print("I2C device found at address 0x");
       if (address < 16)
-        Serial1.print("0");
-      Serial1.print(address, HEX);
-      Serial1.println("  !");
+        uart1.print("0");
+      uart1.print(address, HEX);
+      uart1.println("  !");
     }
     else if (error == 4)
     {
-      Serial1.print("Unknown error at address 0x");
+      uart1.print("Unknown error at address 0x");
       if (address < 16)
-        Serial1.print("0");
-      Serial1.println(address, HEX);
+        uart1.print("0");
+      uart1.println(address, HEX);
     }
   }
 }
@@ -70,8 +70,8 @@ void init_tof_sensors()
     tof_sensors[i].setTimeout(500);
     if (!tof_sensors[i].init())
     {
-      Serial1.print(i);
-      Serial1.println("Failed to detect and initialize sensor!");
+      uart1.print(i);
+      uart1.println("Failed to detect and initialize sensor!");
 
       while (1)
         ;
@@ -80,7 +80,7 @@ void init_tof_sensors()
 
     tof_sensors[i].startContinuous(0);
 
-    Serial1.println("TOF sensor initialized");
+    uart1.println("TOF sensor initialized");
   }
 }
 
@@ -112,22 +112,32 @@ void init_neopixel()
   pixels.show();
 }
 
-void send_tof(HardwareSerial &serial)
+void send_tof()
 {
   for (int i = 0; i < 5; i++)
   {
-    serial.print(tof_distances[i]);
-    serial.print(" ");
+    uart1.print(tof_distances[i]);
+    uart1.print(" ");
   }
-  serial.println();
+  uart1.println();
+  for (int i = 0; i < 5; i++)
+  {
+    uart2.print(tof_distances[i]);
+    uart2.print(" ");
+  }
+  uart2.println();
 }
 
 void setup()
 {
+  uart2.setRx(PA3);
+  uart2.setTx(PA2);
 
-  Serial1.begin(115200);
-  Serial2.begin(115200);
-  Serial3.begin(115200);
+  uart1.begin(115200);
+  uart2.begin(115200);
+
+  uart3.begin(115200);
+  uart2.println("Hello from the main board");
   init_neopixel();
 
   init_i2c();
@@ -140,7 +150,7 @@ void setup()
 void loop()
 {
   get_tof_distances();
-  send_tof(Serial1);
+  send_tof();
 
   pixels.setPixelColor(7, pixels.Color(0, 255, 0));
   pixels.setPixelColor(5, pixels.Color(0, 255, 0));
@@ -148,22 +158,37 @@ void loop()
   pixels.setPixelColor(2, pixels.Color(0, 255, 0));
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
 
-  if(tof_distances[4] < 100){
+  if (tof_distances[4] < 100)
+  {
     pixels.setPixelColor(0, pixels.Color(255, 0, 0));
   }
-  if(tof_distances[3] < 100){
+  if (tof_distances[3] < 100)
+  {
     pixels.setPixelColor(2, pixels.Color(255, 0, 0));
   }
-  if(tof_distances[2] < 100){
+  if (tof_distances[2] < 100)
+  {
     pixels.setPixelColor(4, pixels.Color(255, 0, 0));
   }
-  if(tof_distances[1] < 100){
+  if (tof_distances[1] < 100)
+  {
     pixels.setPixelColor(5, pixels.Color(255, 0, 0));
   }
-  if(tof_distances[0] < 100){
+  if (tof_distances[0] < 100)
+  {
     pixels.setPixelColor(7, pixels.Color(255, 0, 0));
   }
   pixels.show();
-
-
+  // if(uart1.available())
+  // {
+  //   char c = uart1.read();
+  //   uart2.write(c);
+  //   uart1.write(c);
+  // }
+  // if(uart2.available())
+  // {
+  //   char c = uart2.read();
+  //   uart1.write(c);
+  //   uart2.write(c);
+  // }
 }
