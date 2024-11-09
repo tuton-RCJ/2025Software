@@ -19,8 +19,7 @@ Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(3, NP_L, NEO_GRB + NEO_KHZ800);
 
 HardwareSerial Serial1(PA10, PA9);
 HardwareSerial Serial3(PC11, PC10);
-int sensor[] = {PC0, PC1, PC2, PC3, PA0, PA1, PA2, PA4, PA5, PA6, PA7, PC4, PC5, PB0, PB1, PA3};//LLLLLLLCRRRRRRRF
-
+int sensor[] = {PC0, PC1, PC2, PC3, PA0, PA1, PA2, PA4, PA5, PA6, PA7, PC4, PC5, PB0, PB1, PA3}; // LLLLLLLCRRRRRRRF
 
 int ReadColorSensorL();
 int ReadColorSensorR();
@@ -42,14 +41,14 @@ void setup()
   // 0x8B = ADC-Reset + High Gain + 179.2ms
   Wire.beginTransmission(S11059_ADDR);
   Wire.write(0x00);
-  Wire.write(0x8B);
+  Wire.write(0x8A);
   Wire.endTransmission();
 
   // 0x00 = Control
   // 0x0B = ADC-Run + High Gain + 179.2ms
   Wire.beginTransmission(S11059_ADDR);
   Wire.write(0x00);
-  Wire.write(0x0B);
+  Wire.write(0x0A);
   Wire.endTransmission();
 
   Wire2.setSDA(I2C2_SDA);
@@ -58,12 +57,12 @@ void setup()
 
   Wire2.beginTransmission(S11059_ADDR);
   Wire2.write(0x00);
-  Wire2.write(0x8B);
+  Wire2.write(0x8A);
   Wire2.endTransmission();
 
   Wire2.beginTransmission(S11059_ADDR);
   Wire2.write(0x00);
-  Wire2.write(0x0B);
+  Wire2.write(0x0A);
   Wire2.endTransmission();
 
   strip.begin();
@@ -98,15 +97,22 @@ void loop()
     Serial3.print(" ");
   }
 
-  int color_L = ReadColorSensorL();
-  int color_R = ReadColorSensorR();
-  Serial1.print(color_L);
+  ReadColorSensorL();
   Serial1.print(" ");
-  Serial1.println(color_R);
-
-  Serial3.print(color_L);
   Serial3.print(" ");
-  Serial3.println(color_R);
+  ReadColorSensorR();
+
+  Serial1.println("");
+  Serial3.println("");
+
+  if (Serial3.available())
+  {
+    int brightness = Serial3.parseInt();
+    strip.setBrightness(brightness);
+    strip2.setBrightness(brightness);
+    strip.show();
+    strip2.show();
+  }
 }
 
 int ReadColorSensorL()
@@ -143,6 +149,18 @@ int ReadColorSensorL()
     rr = map(r, 30, 56000, 0, 255);
     gg = map(g, 30, 41000, 0, 255);
     bb = map(b, 30, 56000, 0, 255);
+    Serial1.print(rr);
+    Serial1.print(" ");
+    Serial1.print(gg);
+    Serial1.print(" ");
+    Serial1.print(bb);
+
+    Serial3.print(rr);
+    Serial3.print(" ");
+    Serial3.print(gg);
+    Serial3.print(" ");
+    Serial3.print(bb);
+
     if (rr > 100 && gg > 100)
     {
       a = 1;
@@ -202,26 +220,38 @@ int ReadColorSensorR()
     rr = map(r, 30, 56000, 0, 255);
     gg = map(g, 30, 41000, 0, 255);
     bb = map(b, 30, 56000, 0, 255);
-    if (rr > 100 && gg > 100)
-    {
-      a = 1;
-    }
-    else if (rr > 55 && gg > 55)
-    {
-      a = 2;
-    }
-    else if (rr > 55)
-    {
-      a = 3;
-    }
-    else if (gg > 75)
-    {
-      a = 4;
-    }
-    else
-    {
-      a = 0;
-    }
+    Serial1.print(rr);
+    Serial1.print(" ");
+    Serial1.print(gg);
+    Serial1.print(" ");
+    Serial1.print(bb);
+
+    Serial3.print(rr);
+    Serial3.print(" ");
+    Serial3.print(gg);
+    Serial3.print(" ");
+    Serial3.print(bb);
+
+    // if (rr > 100 && gg > 100)
+    // {
+    //   a = 1;
+    // }
+    // else if (rr > 55 && gg > 55)
+    // {
+    //   a = 2;
+    // }
+    // else if (rr > 55)
+    // {
+    //   a = 3;
+    // }
+    // else if (gg > 75)
+    // {
+    //   a = 4;
+    // }
+    // else
+    // {
+    //   a = 0;
+    // }
   }
   Wire2.endTransmission();
   return a;

@@ -1,6 +1,5 @@
 #include "buzzer.h"
 
-
 #define C3 131
 #define D3 147
 #define E3 165
@@ -58,15 +57,25 @@ void Buzzer::beep(int note, double duration)
 
 void Buzzer::boot()
 {
-    _bpm=400;
-    
+    _bpm = 400;
+
     beep(C5, 0.5);
     beep(E5, 0.5);
     beep(G5, 0.5);
 }
 
+void Buzzer::GreenMarker()
+{
+    _bpm = 200;
+    beep(C5, 0.5);
+    beep(G5, 0.5);
+    beep(E5, 0.5);
+    beep(C5, 0.5);
+}
+
 void Buzzer::kouka()
 {
+    _bpm = 100;
     // とよあしはらの
     beep(C4, 1);
     beep(E4, 1);

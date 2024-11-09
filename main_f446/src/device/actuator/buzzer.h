@@ -11,6 +11,7 @@ public:
     void mute();
     void kouka();
     void boot();
+    void GreenMarker();
     const bool isDisabled = false;
 
 private:

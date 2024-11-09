@@ -9,7 +9,7 @@ public:
     LineUnit(HardwareSerial *serial);
     int read();
     void flush() { _serial->flush(); }
-
+    void setBrightness(int brightness);
     int _photoReflector[15];
     int _frontPhotoReflector;
     int colorL[3];

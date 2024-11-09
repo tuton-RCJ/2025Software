@@ -63,11 +63,11 @@ void STS3032::drive(int driveSpeedPercent, int turnRate)
     else if (turnRate >= 0)
     {
         LeftDrive(driveSpeedPercent, 0);
-        RightDrive(driveSpeedPercent - turnRate, 0);
+        RightDrive(driveSpeedPercent * (50 - turnRate) / 50, 0);
     }
     else if (turnRate <= 0)
     {
-        LeftDrive(driveSpeedPercent - turnRate, 0);
+        LeftDrive(driveSpeedPercent * (50 + turnRate) / 50, 0);
         RightDrive(driveSpeedPercent, 0);
     }
 }

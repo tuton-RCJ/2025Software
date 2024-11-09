@@ -20,7 +20,7 @@ public:
 private:
     SMS_STS sms_sts;
     HardwareSerial *_serial;
-    int _maxSpeed = 6000;
+    int _maxSpeed = 7500;
 };
 
 #endif

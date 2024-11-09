@@ -12,18 +12,35 @@ int LineUnit::read()
     {
         String str = _serial->readStringUntil('\n');
 
-        int dataBox[18];
+        int dataBox[30];
         StringToIntValues(str, dataBox);
         for (int i = 0; i < 15; i++)
         {
             _photoReflector[i] = dataBox[i];
         }
         _frontPhotoReflector = dataBox[15];
-        colorL[0] = dataBox[16];
-        colorR[0] = dataBox[17];
+        for (int i = 0; i < 3; i++)
+        {
+            colorL[i] = dataBox[16 + i];
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            colorR[i] = dataBox[19 + i];
+        }
+
+        while (_serial->available() > 0)
+        {
+            _serial->read();
+        }
+
         return 1;
     }
     return 0;
+}
+
+void LineUnit::setBrightness(int brightness)
+{
+    _serial->println(brightness);
 }
 
 void LineUnit::StringToIntValues(String str, int values[])
@@ -32,6 +49,10 @@ void LineUnit::StringToIntValues(String str, int values[])
     int j = 0;
     while (i < str.length())
     {
+        if (j > 29)
+        {
+            break;
+        }
         if (str[i] == ' ')
         {
             i++;
