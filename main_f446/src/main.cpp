@@ -22,7 +22,10 @@ ToF tof(&uart6);
 void LineTrace();
 void CheckRed();
 void CheckGreen();
+
 void CheckObject();
+bool TurningObject = false;
+void TurnObject();
 
 // FOR LINETRACE
 int Kps[15] = {-2, -2, -2, -2, -2, -2, -2, 0, 2, 2, 2, 2, 2, 2, 2};
@@ -58,20 +61,20 @@ void setup()
   line.Flash();
   loadcell.init();
   speed = 50;
+  TurningObject = false;
 }
 
 void loop()
 {
   tof.getTofValues();
-  // for (int i = 0; i < 4; i++)
-  // {
-  //   uart1.print(tof.tof_main[i]);
-  //   uart1.print(" ");
-  // }
-  // uart1.println();
-  // return;
+
   line.read();
   loadcell.read();
+  if (TurningObject)
+  {
+    TurnObject();
+    return;
+  }
   LineTrace();
   CheckRed();
   CheckGreen();
@@ -177,29 +180,28 @@ void CheckObject()
     buzzer.ObjectDetected();
     sts3032.drive(-speed, 0);
     delay(300);
-    sts3032.turn(50, -90);
-    while (true)
-    {
-      tof.getTofValues();
-
-      // int _return = line.read();
-      // if (_return == 1 && line._frontPhotoReflector > threshold)
-      // {
-      //   break;
-      // }
-      if (tof.tof_main[0] < 100)
-      {
-        buzzer.beep(440, 0.5);
-        //sts3032.drive(40, 0);
-      }
-      else
-      {
-        buzzer.beep(880, 0.5);
-
-      }
-    }
-    buzzer.ObjectDetected();
-    sts3032.stop();
+    sts3032.turn(50, 90);
+    TurningObject = true;
   }
 }
 
+void TurnObject()
+{
+  if (tof.tof_main[0] < 90)
+  {
+    buzzer.beep(440, 0.5);
+    sts3032.drive(40, 0);
+  }
+  else
+  {
+    buzzer.beep(880, 0.5);
+    sts3032.drive(40, -70);
+  }
+  if (line._frontPhotoReflector > threshold)
+  {
+    sts3032.stop();
+    buzzer.ObjectDetected();
+    sts3032.turn(50, 40);
+    TurningObject = false;
+  }
+}
