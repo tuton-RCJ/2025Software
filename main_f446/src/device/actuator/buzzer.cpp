@@ -64,13 +64,33 @@ void Buzzer::boot()
     beep(G5, 0.5);
 }
 
-void Buzzer::GreenMarker()
+void Buzzer::ObjectDetected()
 {
     _bpm = 200;
+    for (int i = 0; i < 2; i++)
+    {
+        beep(E4, 0.5);
+        beep(A4, 0.5);
+        beep(G4, 0.5);
+    }
+}
+
+void Buzzer::GreenMarker(int p)
+{
+    _bpm = 100;
     beep(C5, 0.5);
-    beep(G5, 0.5);
-    beep(E5, 0.5);
-    beep(C5, 0.5);
+    if (p > 0)
+    {
+        beep(G5, 0.5);
+    }
+    if (p > 1)
+    {
+        beep(E5, 0.5);
+    }
+    if (p > 2)
+    {
+        beep(C5, 0.5);
+    }
 }
 
 void Buzzer::kouka()

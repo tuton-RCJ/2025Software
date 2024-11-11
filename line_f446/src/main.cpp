@@ -102,13 +102,37 @@ void loop()
   Serial3.print(" ");
   ReadColorSensorR();
 
-  Serial1.println("");
-  Serial3.println("");
+  Serial1.println();
+  Serial3.println();
 
   if (Serial3.available())
   {
-    int brightness = Serial3.parseInt();
+    int brightness = Serial3.read();
+    for (int i = 0; i < 3; i++)
+    {
+      strip.setPixelColor(i, 255, 255, 0);
+    }
     strip.setBrightness(brightness);
+    for (int i = 0; i < 3; i++)
+    {
+      strip2.setPixelColor(i, 255, 255, 0);
+    }
+    strip2.setBrightness(brightness);
+    strip.show();
+    strip2.show();
+  }
+  if (Serial1.available())
+  {
+    int brightness = Serial1.read();
+    for (int i = 0; i < 3; i++)
+    {
+      strip.setPixelColor(i, 255, 255, 0);
+    }
+    strip.setBrightness(brightness);
+    for (int i = 0; i < 3; i++)
+    {
+      strip2.setPixelColor(i, 255, 255, 0);
+    }
     strip2.setBrightness(brightness);
     strip.show();
     strip2.show();

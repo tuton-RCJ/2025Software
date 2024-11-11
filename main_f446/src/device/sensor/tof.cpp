@@ -1,19 +1,25 @@
 #include "tof.h"
 
-tof::tof(HardwareSerial *frontSerial)
+ToF::ToF(HardwareSerial *frontSerial)
 {
     _frontSerial = frontSerial;
     _frontSerial->begin(115200);
-    init();
 }
 
-void tof::init()
+void ToF::init(HardwareSerial *debugSerial)
 {
-    int e = init_tof_sensors();
+    int e = init_tof_sensors(debugSerial);
+    Flash();
     return;
 }
 
-int tof::init_tof_sensors()
+void ToF::getTofValues()
+{
+    get_tof_main();
+    get_tof_front();
+}
+
+int ToF::init_tof_sensors(HardwareSerial *debugSerial)
 {
     for (int i = 0; i < 4; i++)
     {
@@ -23,11 +29,13 @@ int tof::init_tof_sensors()
     delay(100);
     for (int i = 0; i < 4; i++)
     {
+
         digitalWrite(tof_pins[i], HIGH);
         delay(20);
         tof_sensors[i].setTimeout(500);
         if (!tof_sensors[i].init())
         {
+            debugSerial->println("Failed to detect and initialize sensor!");
             return 1;
         }
         tof_sensors[i].setAddress(0x30 + i);
@@ -37,7 +45,7 @@ int tof::init_tof_sensors()
     return 0;
 }
 
-void tof::get_tof_main()
+void ToF::get_tof_main()
 {
     for (int i = 0; i < 4; i++)
     {
@@ -45,10 +53,50 @@ void tof::get_tof_main()
     }
 }
 
-// void  tof::get_tof_front()
-// {
-//     if(_frontSerial.available()){
-//         //read the data from the front sensor
-//         char data = _frontSerial.read();
-//     }
-// }
+void ToF::get_tof_front()
+{
+    if (_frontSerial->available())
+    {
+        // read the data from the front sensor
+        String str = _frontSerial->readStringUntil('\n');
+        int dataBox[5];
+        StringToIntValues(str, dataBox);
+        for (int i = 0; i < 5; i++)
+        {
+            tof_front[i] = dataBox[i];
+        }
+        Flash();
+    }
+}
+void ToF::Flash()
+{
+    while (_frontSerial->available())
+    {
+        _frontSerial->readStringUntil('\n');
+    }
+}
+void ToF::StringToIntValues(String str, int values[])
+{
+    int i = 0;
+    int j = 0;
+    while (i < str.length())
+    {
+        if (j > 29)
+        {
+            break;
+        }
+        if (str[i] == ' ')
+        {
+            i++;
+            continue;
+        }
+        String value = "";
+        while (str[i] != ' ' && i < str.length())
+        {
+            value += str[i];
+            i++;
+        }
+        values[j] = value.toInt();
+        j++;
+    }
+}

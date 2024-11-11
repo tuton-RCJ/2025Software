@@ -2,28 +2,37 @@
 #include "./device/device.h"
 #include <Wire.h>
 
+#define I2C_SDA PB7
+#define I2C_SCL PB6
+
 HardwareSerial uart1(PA10, PA9);  // USB
 HardwareSerial uart2(PA3, PA2);   // LINE BOARD
 HardwareSerial uart3(PC11, PC10); // STS3032
 HardwareSerial uart4(PA1, PA0);   // FRONT->>not used
-HardwareSerial uart5(PD2, PC12);  // Top
-HardwareSerial uart6(PC7, PC6);   // ESP32->>FRONT
-
-STS3032 sts3032(&uart3);
+// HardwareSerial uart5(PD2, PC12);  // Top
+HardwareSerial uart6(PC7, PC6); // ESP32->>FRONT
 
 Buzzer buzzer(PB1);
+LoadCell loadcell;
 
 LineUnit line(&uart2);
+STS3032 sts3032(&uart3);
+ToF tof(&uart6);
 
 void LineTrace();
 void CheckRed();
 void CheckGreen();
-// tof tof(&uart6);
+void CheckObject();
 
-#define I2C_SDA PB7
-#define I2C_SCL PB6
-
+// FOR LINETRACE
+int Kps[15] = {-2, -2, -2, -2, -2, -2, -2, 0, 2, 2, 2, 2, 2, 2, 2};
 int threshold = 700;
+int Kp = 10;
+int Kd = 0;
+int Ki = 0;
+int lastError = 0;
+int sumError = 0;
+int speed = 40;
 
 void init_i2c()
 {
@@ -41,40 +50,41 @@ void setup()
   // uart2.println("Hello, World!");
 
   init_i2c();
-  line.setBrightness(76);
-  buzzer.boot();
 
-  // uart2.begin(115200);
-  //  sts3032.drive(20, 100);
-  //  buzzer.kouka();
+  tof.init(&uart1);
+
+  line.setBrightness(80);
+  buzzer.boot();
+  line.Flash();
+  loadcell.init();
+  speed = 50;
 }
 
 void loop()
 {
+  tof.getTofValues();
+  // for (int i = 0; i < 4; i++)
+  // {
+  //   uart1.print(tof.tof_main[i]);
+  //   uart1.print(" ");
+  // }
+  // uart1.println();
+  // return;
   line.read();
-  for (int i = 0; i < 3; i++)
-  {
-    uart1.print(line.colorL[i]);
-    uart1.print(" ");
-  }
-  uart1.println();
+  loadcell.read();
   LineTrace();
   CheckRed();
   CheckGreen();
+
+  // tof.getTofValues();
+  CheckObject();
 }
 
-int Kps[15] = {-2, -2, -2, -2, -2, -2, -2, 0, 2, 2, 2, 2, 2, 2, 2};
-int Kp = 10;
-int Kd = 0;
-int Ki = 0;
-int error = 0;
-int lastError = 0;
-int sumError = 0;
 void LineTrace()
 {
-  error = 0;
+  int error = 0;
   int pid = 0;
-  int speed = 70;
+
   int turnRate = 0;
   for (int i = 0; i < 15; i++)
   {
@@ -83,10 +93,10 @@ void LineTrace()
       error += Kps[i];
     }
   }
-  // if (abs(error) > 10 && line._frontPhotoReflector > threshold)
-  // {
-  //   error = 0;
-  // }
+  if (abs(error) > 10 && line._frontPhotoReflector > threshold)
+  {
+    error = 0;
+  }
   sumError += error;
   pid = Kp * error + Ki * sumError + Kd * (error - lastError);
   lastError = error;
@@ -97,7 +107,7 @@ void LineTrace()
 
 void CheckRed()
 {
-  if (line.colorL[0] > 16 && line.colorL[1] < 20)
+  if (line.colorLTime[3] > 0 && millis() - line.colorLTime[3] < 100)
   {
     sts3032.stop();
     buzzer.kouka();
@@ -106,12 +116,90 @@ void CheckRed()
 
 void CheckGreen()
 {
-  if (line.colorL[0] < 10 && line.colorL[1] > 16)
+  if (millis() - line.colorLTime[0] < 10 || millis() - line.colorRTime[0] < 10)
   {
-    for (int i = 0; i < 5; i++)
+    int p = 0;
+    if (line.colorLTime[2] > 0 && millis() - line.colorLTime[2] < 400)
+    {
+      p += 1;
+    }
+    if (line.colorRTime[2] > 0 && millis() - line.colorRTime[2] < 400)
+    {
+      p += 2;
+    }
+    if (p > 0)
     {
       sts3032.stop();
+      buzzer.GreenMarker(p);
+      if (p == 1)
+      {
+        sts3032.drive(50, -85);
+        delay(1000);
+        sts3032.stop();
+      }
+      if (p == 2)
+      {
+        sts3032.drive(50, 85);
+        delay(1000);
+        sts3032.stop();
+      }
+      if (p == 3)
+      {
+        sts3032.drive(50, 100);
+        delay(1800);
+        sts3032.stop();
+      }
     }
-    buzzer.GreenMarker();
   }
 }
+
+void CheckObject()
+{
+  bool flag = false;
+  for (int i = 0; i < 5; i++)
+  {
+    if (tof.tof_front[i] < 100)
+    {
+      flag = true;
+    }
+  }
+  if (flag)
+  {
+    speed = 30;
+  }
+  else
+  {
+    speed = 50;
+  }
+  if (loadcell.values[0] > 30 || loadcell.values[1] > 30)
+  {
+    sts3032.stop();
+    buzzer.ObjectDetected();
+    sts3032.drive(-speed, 0);
+    delay(300);
+    sts3032.turn(50, -90);
+    while (true)
+    {
+      tof.getTofValues();
+
+      // int _return = line.read();
+      // if (_return == 1 && line._frontPhotoReflector > threshold)
+      // {
+      //   break;
+      // }
+      if (tof.tof_main[0] < 100)
+      {
+        buzzer.beep(440, 0.5);
+        //sts3032.drive(40, 0);
+      }
+      else
+      {
+        buzzer.beep(880, 0.5);
+
+      }
+    }
+    buzzer.ObjectDetected();
+    sts3032.stop();
+  }
+}
+

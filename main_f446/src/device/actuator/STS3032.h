@@ -13,6 +13,7 @@ public:
     void RightDrive(int SpeedPercent, int acceleration);
     void stop();
     void drive(int driveSpeedPercent, int turnRate);
+    void turn(int speed, int degree);
 
     const bool isDisabled = false;
     const int baudrate = 1000000;

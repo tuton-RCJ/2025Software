@@ -11,7 +11,8 @@ public:
     void mute();
     void kouka();
     void boot();
-    void GreenMarker();
+    void ObjectDetected();
+    void GreenMarker(int p);
     const bool isDisabled = false;
 
 private:
