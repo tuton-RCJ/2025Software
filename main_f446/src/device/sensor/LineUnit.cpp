@@ -4,11 +4,19 @@ LineUnit::LineUnit(HardwareSerial *serial)
 {
     _serial = serial;
     _serial->begin(115200);
+    init();
+}
+
+void LineUnit::init()
+{
     for (int i = 0; i < 4; i++)
     {
         colorLTime[i] = 0;
         colorRTime[i] = 0;
     }
+    LastColorL = 4;
+    LastColorR = 4;
+    Flash();
 }
 
 void LineUnit::Flash()
@@ -95,7 +103,7 @@ void LineUnit::checkColor(int colorArr[], unsigned long colorTime[], int *LastCo
 {
     int color = 0;
 
-    if (colorArr[0] * 3 < colorArr[1])
+    if ((float)colorArr[0] * 3.5f < colorArr[1])
     {
 
         color = 2;

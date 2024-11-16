@@ -79,7 +79,7 @@ void STS3032::turn(int speed, int degree)
 {
     float speedPercent = constrain(speed / 100.0f, -1, 1);
     float Deg360PerSpeed1 = 2.1f;
-    float time = degree / 360.0f / speedPercent * Deg360PerSpeed1 * degree > 0 ? 1 : -1;
+    float time = degree / 360.0f / speedPercent * Deg360PerSpeed1 * (degree > 0 ? 1 : -1);
     drive(speed, degree > 0 ? 100 : -100);
     delay(time * 1000);
     stop();

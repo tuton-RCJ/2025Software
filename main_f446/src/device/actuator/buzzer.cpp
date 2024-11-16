@@ -123,4 +123,13 @@ void Buzzer::kouka()
     beep(A3, 1);
     beep(C4, 1);
     beep(G3, 2);
+
+    // やまとたけ
+    beep(C4, 1);
+    beep(E4, 1);
+    beep(D4, 1.5);
+    beep(G3, 0.5);
+
+    beep(C4, 4);
+    delay(10000);
 }

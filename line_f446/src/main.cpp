@@ -27,11 +27,11 @@ int ReadColorSensorR();
 void setup()
 {
 
+  // Serial1.begin(9600);
   Serial1.begin(115200);
   Serial3.begin(115200);
 
-  Serial1.println("start");
-
+  // Serial1.println("start");
   Wire.setSDA(I2C_SDA);
   Wire.setSCL(I2C_SCL);
   // Init I2C
@@ -87,7 +87,7 @@ void setup()
 void loop()
 {
   delay(20);
-  // put your main code here, to run repeatedly:
+  //  put your main code here, to run repeatedly:
   for (int i = 0; i < 16; i++)
   {
     int val = analogRead(sensor[i]);
@@ -96,7 +96,7 @@ void loop()
     Serial3.print(val);
     Serial3.print(" ");
   }
-
+  
   ReadColorSensorL();
   Serial1.print(" ");
   Serial3.print(" ");

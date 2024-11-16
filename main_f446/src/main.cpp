@@ -5,11 +5,13 @@
 #define I2C_SDA PB7
 #define I2C_SCL PB6
 
+#define StartSwitch PA0
+
 HardwareSerial uart1(PA10, PA9);  // USB
 HardwareSerial uart2(PA3, PA2);   // LINE BOARD
 HardwareSerial uart3(PC11, PC10); // STS3032
-HardwareSerial uart4(PA1, PA0);   // FRONT->>not used
-// HardwareSerial uart5(PD2, PC12);  // Top
+// HardwareSerial uart4(PA1, PA0);   // FRONT->>not used
+//  HardwareSerial uart5(PD2, PC12);  // Top
 HardwareSerial uart6(PC7, PC6); // ESP32->>FRONT
 
 Buzzer buzzer(PB1);
@@ -28,14 +30,14 @@ bool TurningObject = false;
 void TurnObject();
 
 // FOR LINETRACE
-int Kps[15] = {-2, -2, -2, -2, -2, -2, -2, 0, 2, 2, 2, 2, 2, 2, 2};
-int threshold = 700;
-int Kp = 10;
+int Kps[15] = {-4, -4, -3, -3, -3, -2, -2, 0, 2, 2, 3, 3, 3, 4, 4};
+int threshold = 800;
+int Kp = 12;
 int Kd = 0;
 int Ki = 0;
 int lastError = 0;
 int sumError = 0;
-int speed = 40;
+int speed = 30;
 
 void init_i2c()
 {
@@ -50,36 +52,43 @@ void setup()
   uart1.begin(115200);
 
   uart1.println("Hello, World!");
-  // uart2.println("Hello, World!");
 
   init_i2c();
 
   tof.init(&uart1);
 
   line.setBrightness(80);
-  buzzer.boot();
-  line.Flash();
   loadcell.init();
-  speed = 50;
+  speed = 30;
   TurningObject = false;
+  pinMode(StartSwitch, INPUT);
+  buzzer.boot();
 }
 
 void loop()
 {
-  tof.getTofValues();
+  if (digitalRead(StartSwitch) == 0)
+  {
+    sts3032.stop();
+    speed = 30;
+    TurningObject = false;
+    line.init();
+    return;
+  }
 
   line.read();
+
+
   loadcell.read();
   if (TurningObject)
   {
+    tof.getTofValues();
     TurnObject();
     return;
   }
   LineTrace();
   CheckRed();
   CheckGreen();
-
-  // tof.getTofValues();
   CheckObject();
 }
 
@@ -119,7 +128,7 @@ void CheckRed()
 
 void CheckGreen()
 {
-  if (millis() - line.colorLTime[0] < 10 || millis() - line.colorRTime[0] < 10)
+  if (millis() - line.colorLTime[0] < 10 || millis() - line.colorRTime[0] < 10 && line._frontPhotoReflector)
   {
     int p = 0;
     if (line.colorLTime[2] > 0 && millis() - line.colorLTime[2] < 400)
@@ -136,20 +145,26 @@ void CheckGreen()
       buzzer.GreenMarker(p);
       if (p == 1)
       {
-        sts3032.drive(50, -85);
-        delay(1000);
+        sts3032.drive(40, 0);
+        delay(400);
+        sts3032.turn(30, -80);
+
+        // sts3032.drive(50, -85);
+        // delay(1000);
         sts3032.stop();
       }
       if (p == 2)
       {
-        sts3032.drive(50, 85);
-        delay(1000);
+        sts3032.drive(40, 0);
+        delay(400);
+        sts3032.turn(30, 80);
+        // sts3032.drive(50, 85);
+        // delay(1000);
         sts3032.stop();
       }
       if (p == 3)
       {
-        sts3032.drive(50, 100);
-        delay(1800);
+        sts3032.turn(50, 180);
         sts3032.stop();
       }
     }
@@ -172,14 +187,14 @@ void CheckObject()
   }
   else
   {
-    speed = 50;
+    speed = 30;
   }
   if (loadcell.values[0] > 30 || loadcell.values[1] > 30)
   {
     sts3032.stop();
     buzzer.ObjectDetected();
     sts3032.drive(-speed, 0);
-    delay(300);
+    delay(200);
     sts3032.turn(50, 90);
     TurningObject = true;
   }
@@ -187,7 +202,7 @@ void CheckObject()
 
 void TurnObject()
 {
-  if (tof.tof_main[0] < 90)
+  if (tof.tof_main[0] < 120)
   {
     buzzer.beep(440, 0.5);
     sts3032.drive(40, 0);
@@ -197,11 +212,19 @@ void TurnObject()
     buzzer.beep(880, 0.5);
     sts3032.drive(40, -70);
   }
-  if (line._frontPhotoReflector > threshold)
+  bool blackFlag = false;
+  for (int i = 0; i < 15; i++)
+  {
+    if (line._photoReflector[i] > threshold)
+    {
+      blackFlag = true;
+    }
+  }
+  if (blackFlag)
   {
     sts3032.stop();
     buzzer.ObjectDetected();
-    sts3032.turn(50, 40);
+    sts3032.turn(50, 60);
     TurningObject = false;
   }
 }
